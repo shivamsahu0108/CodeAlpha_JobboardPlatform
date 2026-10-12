@@ -1,0 +1,1 @@
+export type Role='Candidate'|'Employer'; export type User={username:string;role:Role}; export type Job={id:number;title:string;company:string;description:string;location:string;salary:number|null;job_type:string;status:string;created_at?:string;applications_count?:number};
