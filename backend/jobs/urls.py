@@ -1,0 +1,126 @@
+
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    path("jobs/", views.job_list, name="job_list"),
+    path("jobs/create/", views.create_job, name="create_job"),
+    path("register/", views.register, name="register"),
+    path("login/", views.login_user, name="login"),
+    path("change-password/", views.change_password, name="change_password"),
+    path(
+        "jobs/<int:job_id>/apply/",
+        views.apply_for_job,
+        name="apply_for_job"
+    ),
+    path(
+    "applications/my/",
+    views.my_applications,
+    name="my_applications",
+    ),
+    path(
+        "employer/applications/",
+        views.employer_applications,
+        name="employer_applications",
+    ),
+    path(
+        "applications/<int:application_id>/status/",
+        views.update_application_status,
+        name="update_application_status",
+    ),
+    path(
+        "resumes/upload/",
+        views.upload_resume,
+        name="upload_resume",
+    ),
+    path(
+        "resumes/my/",
+        views.my_resumes,
+        name="my_resumes",
+    ),
+    path(
+        "resumes/<int:resume_id>/delete/",
+        views.delete_resume,
+        name="delete_resume",
+    ),
+    path(
+    "jobs/<int:job_id>/",
+    views.job_detail,
+    name="job_detail",
+    ),
+    path(
+        "jobs/<int:job_id>/save/",
+        views.save_job,
+        name="save_job",
+    ),
+    path(
+        "jobs/saved/",
+        views.my_saved_jobs,
+        name="my_saved_jobs",
+    ),
+    path(
+        "jobs/<int:saved_id>/unsave/",
+        views.delete_saved_job,
+        name="delete_saved_job",
+    ),
+    path(
+        "employer/dashboard/",
+        views.employer_dashboard,
+        name="employer_dashboard",
+    ),
+    path(
+        "jobs/<int:job_id>/edit/",
+        views.edit_job,
+        name="edit_job",
+    ),
+    path(
+        "jobs/<int:job_id>/close/",
+        views.close_job,
+        name="close_job",
+    ),
+    path(
+        "jobs/<int:job_id>/reopen/",
+        views.reopen_job,
+        name="reopen_job",
+    ),
+    path(
+        "jobs/<int:job_id>/delete/",
+        views.delete_job,
+        name="delete_job",
+    ),
+    path(
+        "notifications/my/",
+        views.my_notifications,
+        name="my_notifications",
+    ),
+    path(
+        "notifications/<int:notification_id>/read/",
+        views.mark_notification_as_read,
+        name="mark_notification_as_read",
+    ),
+    path(
+    "notifications/unread-count/",
+    views.unread_notification_count,
+    name="unread_notification_count",
+    ),
+    path(
+        "forgot-password/",
+        views.forgot_password,
+        name="forgot_password",
+    ),
+    path(
+        "reset-password/",
+        views.reset_password,
+        name="reset_password",
+    ),
+    path(
+        "profile/me/",
+        views.my_profile,
+        name="my_profile",
+    ),
+    path(
+        "profile/update/",
+        views.update_profile,
+        name="update_profile",
+    ),
+]
