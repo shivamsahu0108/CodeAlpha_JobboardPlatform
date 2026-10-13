@@ -135,8 +135,6 @@ def forgot_password(request):
     for user in users:
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
-        print("DEBUG password reset user ID:", user.pk)
-        print("DEBUG password reset UID:", uid)
         reset_link = (
             f"{settings.FRONTEND_URL}/reset-password/"
             f"?uid={uid}&token={token}"

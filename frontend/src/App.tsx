@@ -1,28 +1,116 @@
-import {useState} from 'react';
-import {Routes,Route,Link,NavLink,useNavigate,useLocation,useParams,Navigate} from 'react-router-dom';
-import {useQuery,useMutation,useQueryClient} from '@tanstack/react-query'; import {Search,Briefcase,MapPin,Bookmark,LogOut,LayoutDashboard,FileText,Users,Bell,Building2,Plus,Trash2,Lock} from 'lucide-react'; import toast from 'react-hot-toast'; import {jobs,auth,data,errorText} from './api'; import type {Job,Role} from './types';
-const money=(n:any)=>n?`₹${Number(n).toLocaleString()}`:'Salary not disclosed'; const fail=(e:any)=>toast.error(errorText(e));
-function Header(){const nav=useNavigate();const u=JSON.parse(localStorage.getItem('user')||'null');return <header><div className="container nav"><Link to="/" className="brand">● CodeAlpha<span>Jobs</span></Link><nav><Link to="/jobs">Find jobs</Link>{u?<><Link to={u.role==='Employer'?'/employer':'/candidate'}>Dashboard</Link><button className="btn btn-secondary" onClick={()=>{localStorage.clear();nav('/')}}><LogOut size={15}/> Sign out</button></>:<Link className="btn btn-primary" to="/login">Sign in</Link>}</nav></div></header>}
-function Shell({children}:{children:any}){return <><Header/>{children}<footer><div className="container">© 2025 CodeAlpha Jobs · Find work that moves you forward.</div></footer></>}
-function Empty({title,text}:{title:string;text:string}){return <div className="card empty"><Briefcase/><h3>{title}</h3><p>{text}</p></div>}
-function JobCard({job}:{job:Job}){return <Link to={`/jobs/${job.id}`} className="card job"><span className="pill">{job.job_type}</span><h3>{job.title}</h3><b>{job.company}</b><p><MapPin size={14}/> {job.location}</p><strong>{money(job.salary)}</strong></Link>}
-function Home(){const q=useQuery({queryKey:['jobs'],queryFn:()=>jobs.list({page:1}).then(r=>r.data)});const list=q.data?.results||q.data||[];const [s,setS]=useState('');const nav=useNavigate();return <Shell><section className="hero"><div className="container"><span className="pill">THE FUTURE OF WORK STARTS HERE</span><h1>Find work that <em>moves you forward.</em></h1><p>Discover opportunities from companies that value your skills, ambition, and unique perspective.</p><form className="search" onSubmit={e=>{e.preventDefault();nav('/jobs?search='+s)}}><Search/><input value={s} onChange={e=>setS(e.target.value)} placeholder="Job title, keywords or company"/><button className="btn btn-primary">Search jobs</button></form></div></section><main className="container section"><div className="section-title"><h2>Latest opportunities</h2><Link to="/jobs">View all</Link></div>{q.isLoading?<p>Loading…</p>:<div className="grid">{list.slice(0,3).map((j:Job)=><JobCard key={j.id} job={j}/>)}</div>}<div className="stats"><Stat n="500+" t="Hiring companies"/><Stat n="2,400+" t="Open positions"/><Stat n="18k+" t="Successful matches"/></div></main></Shell>}
-function Stat({n,t}:{n:string;t:string}){return <div className="card stat"><b>{n}</b><span>{t}</span></div>}
-function Jobs(){const p=new URLSearchParams(useLocation().search);const [s,setS]=useState(p.get('search')||'');const [l,setL]=useState('');const q=useQuery({queryKey:['jobs',s,l],queryFn:()=>jobs.list({search:s,location:l}).then(r=>r.data)});const list=q.data?.results||q.data||[];return <Shell><main className="container section"><h1>Find your next opportunity</h1><div className="card filters"><input className="input" value={s} onChange={e=>setS(e.target.value)} placeholder="Search jobs"/><input className="input" value={l} onChange={e=>setL(e.target.value)} placeholder="Location"/></div>{!list.length?<Empty title="No open roles found" text="Try adjusting your search."/>:<div className="grid">{list.map((j:Job)=><JobCard key={j.id} job={j}/>)}</div>}</main></Shell>}
-function JobDetails(){const {id}=useParams();const q=useQuery({queryKey:['job',id],queryFn:()=>jobs.get(id!).then(r=>r.data)});if(q.isLoading)return <Shell><main className="container section">Loading…</main></Shell>;if(q.isError)return <Shell><main className="container section">Job unavailable.</main></Shell>;const j=q.data;return <Shell><main className="container section"><article className="card detail"><span className="pill">{j.job_type}</span><h1>{j.title}</h1><p>{j.company} · {j.location}</p><div className="actions"><button className="btn btn-primary" onClick={()=>{const u=localStorage.getItem('user');if(!u)return location.href='/login';if(JSON.parse(u).role!=='Candidate')return toast.error('Only candidates can apply.');location.href=`/candidate/applications?apply=${j.id}`}}>Apply now</button><Save id={j.id}/></div><hr/><h2>About this role</h2><p className="description">{j.description}</p><strong>{money(j.salary)}</strong></article></main></Shell>}
-function Save({id}:{id:number}){const m=useMutation({mutationFn:()=>jobs.save(id),onSuccess:()=>toast.success('Job saved'),onError:fail});return <button className="btn btn-secondary" onClick={()=>localStorage.getItem('user')?m.mutate():toast.error('Sign in to save jobs')}><Bookmark size={16}/> Save</button>}
-function Auth({register=false}:{register?:boolean}){const nav=useNavigate();const [f,setF]=useState<any>({username:'',email:'',password:'',role:'Candidate'});const set=(k:string,v:any)=>setF({...f,[k]:v});return <Shell><main className="container auth"><div className="card"><h1>{register?'Create your account':'Welcome back'}</h1><form onSubmit={async e=>{e.preventDefault();try{if(register){await auth.register(f);toast.success('Account created');nav('/login')}else{const r=await auth.login({username:f.username,password:f.password});localStorage.setItem('access',r.data.access);localStorage.setItem('refresh',r.data.refresh);const p=await data.profile();localStorage.setItem('user',JSON.stringify({username:r.data.username,role:p.data.role}));nav(p.data.role==='Employer'?'/employer':'/candidate')}}catch(e){fail(e)}}}>{register&&<><Field l="Email" v={f.email} set={v=>set('email',v)}/><label className="label">I am a<select className="input" value={f.role} onChange={e=>set('role',e.target.value)}><option>Candidate</option><option>Employer</option></select></label></>}<Field l="Username" v={f.username} set={v=>set('username',v)}/><Field l="Password" v={f.password} type="password" set={v=>set('password',v)}/><button className="btn btn-primary">{register?'Create account':'Sign in'}</button></form><p>{register?<Link to="/login">Already registered?</Link>:<><Link to="/register">Create an account</Link> · <Link to="/forgot-password">Forgot password?</Link></>}</p></div></main></Shell>}
-function Field({l,v,set,type='text'}:any){return <label className="label">{l}<input required className="input" type={type} value={v} onChange={e=>set(e.target.value)}/></label>}
-function Require({role,children}:{role:Role;children:any}){const u=localStorage.getItem('user');return !u?<Navigate to="/login"/>:JSON.parse(u).role!==role?<Navigate to="/"/>:children}
-const cand=[['Overview','/candidate',LayoutDashboard],['Profile','/candidate/profile',Users],['Saved jobs','/candidate/saved',Bookmark],['Applications','/candidate/applications',FileText],['Resumes','/candidate/resumes',FileText],['Notifications','/candidate/notifications',Bell],['Password','/candidate/password',Lock]];const emp=[['Overview','/employer',LayoutDashboard],['Profile','/employer/profile',Building2],['Post a job','/employer/post',Plus],['Manage jobs','/employer/jobs',Briefcase],['Applicants','/employer/applicants',Users],['Notifications','/employer/notifications',Bell],['Password','/employer/password',Lock]];
-function Dash({role,children}:{role:Role;children:any}){const items=role==='Candidate'?cand:emp;return <><Header/><div className="container dash"><aside className="card"><b>{role} portal</b>{items.map(([n,to,I]:any)=><NavLink end={to===`/${role.toLowerCase()}`} className="sidebar-link" to={to} key={to}><I size={16}/>{n}</NavLink>)}</aside><main>{children}</main></div></>}
-function Dashboard({role}:{role:Role}){const q=useQuery({queryKey:['dashboard',role],queryFn:()=>role==='Employer'?data.dashboard().then(r=>r.data):data.applications().then(r=>r.data)});if(q.isLoading)return <p>Loading…</p>;const d=q.data;return <><h1>{role==='Employer'?'Hiring dashboard':'Your job search'}</h1>{role==='Employer'?<><div className="stats"><Stat n={d.total_jobs} t="Total jobs"/><Stat n={(d.jobs||[]).reduce((x:any,j:any)=>x+(j.applications_count||0),0)} t="Applications"/></div><JobTable jobs={d.jobs||[]}/></>:d.length?<ApplicationTable apps={d}/>:<Empty title="No applications yet" text="Apply to a role to track it here."/>}</>}
-function JobTable({jobs:ls}:any){return <div className="card tablewrap"><table><thead><tr><th>Role</th><th>Status</th><th>Applicants</th></tr></thead><tbody>{ls.map((j:any)=><tr key={j.id}><td>{j.title}</td><td>{j.status}</td><td>{j.applications_count||0}</td></tr>)}</tbody></table></div>}
-function ApplicationTable({apps}:any){return <div className="card tablewrap"><table><thead><tr><th>Job</th><th>Resume</th><th>Status</th></tr></thead><tbody>{apps.map((a:any)=><tr key={a.id}><td>{a.job}</td><td>{a.resume||'—'}</td><td><span className="pill">{a.status}</span></td></tr>)}</tbody></table></div>}
-function Profile(){const q=useQuery({queryKey:['profile'],queryFn:()=>data.profile().then(r=>r.data)});const [f,setF]=useState<any>();if(q.isLoading)return <p>Loading…</p>;const v=f||q.data;return <><h1>Profile</h1><div className="card form-grid">{['first_name','last_name','email','phone','skills','company_name','company_description'].map(k=><Field key={k} l={k.replace('_',' ')} v={v[k]||''} set={(x:any)=>setF({...v,[k]:x})}/>)}<button className="btn btn-primary" onClick={async()=>{try{await data.updateProfile(v);toast.success('Profile updated')}catch(e){fail(e)}}}>Save changes</button></div></>}
-function Resumes(){const q=useQuery({queryKey:['resumes'],queryFn:()=>data.resumes().then(r=>r.data)});const qc=useQueryClient();return <><h1>Resume management</h1><div className="card upload"><input type="file" accept=".pdf,.doc,.docx" onChange={async e=>{if(e.target.files?.[0])try{await data.upload(e.target.files[0]);qc.invalidateQueries({queryKey:['resumes']});toast.success('Uploaded')}catch(x){fail(x)}}}/></div>{(q.data||[]).map((r:any)=><div className="card row" key={r.id}>Resume #{r.id}<button className="btn btn-danger" onClick={()=>data.deleteResume(r.id).then(()=>qc.invalidateQueries({queryKey:['resumes']}))}><Trash2 size={15}/></button></div>)}</>}
-function Applications(){const q=useQuery({queryKey:['apps'],queryFn:()=>data.applications().then(r=>r.data)});const resumes=useQuery({queryKey:['resumes'],queryFn:()=>data.resumes().then(r=>r.data)});const id=new URLSearchParams(useLocation().search).get('apply');const [resume,setResume]=useState('');return <><h1>My applications</h1>{id&&<div className="card apply"><select className="input" value={resume} onChange={e=>setResume(e.target.value)}><option value="">Choose resume</option>{(resumes.data||[]).map((r:any)=><option key={r.id} value={r.id}>Resume #{r.id}</option>)}</select><button className="btn btn-primary" onClick={async()=>{try{await jobs.apply(+id,{job:+id,resume:resume?+resume:null});toast.success('Applied');location.href='/candidate/applications'}catch(e){fail(e)}}}>Submit application</button></div>}{q.data?.length?<ApplicationTable apps={q.data}/>:<Empty title="No applications yet" text="Apply to a role to see it here."/>}</>}
-function EmployerApps(){const q=useQuery({queryKey:['eapps'],queryFn:()=>data.employerApplications().then(r=>r.data)});return <><h1>Applicants</h1><div className="card tablewrap"><table><tbody>{(q.data||[]).map((a:any)=><tr key={a.id}><td>{a.candidate}</td><td>{a.job}</td><td><select className="input" value={a.status} onChange={async e=>{try{await data.status(a.id,e.target.value);q.refetch()}catch(x){fail(x)}}}>{['Applied','Under Review','Shortlisted','Rejected','Selected'].map(s=><option key={s}>{s}</option>)}</select></td></tr>)}</tbody></table></div></>}
-function Post(){const [f,setF]=useState<any>({job_type:'Full-time'});const set=(k:string,v:any)=>setF({...f,[k]:v});return <><h1>Post a job</h1><div className="card form-grid"><Field l="Title" v={f.title||''} set={v=>set('title',v)}/><Field l="Location" v={f.location||''} set={v=>set('location',v)}/><Field l="Salary" v={f.salary||''} set={v=>set('salary',v)}/><label className="label">Type<select className="input" value={f.job_type} onChange={e=>set('job_type',e.target.value)}><option>Full-time</option><option>Part-time</option><option>Internship</option><option>Contract</option></select></label><label className="label full">Description<textarea required className="input" rows={7} value={f.description||''} onChange={e=>set('description',e.target.value)}/></label><button className="btn btn-primary" onClick={async()=>{try{await jobs.create({...f,salary:f.salary?+f.salary:null});toast.success('Published')}catch(e){fail(e)}}}>Publish job</button></div></>}
-function Notifications(){const q=useQuery({queryKey:['notes'],queryFn:()=>data.notifications().then(r=>r.data)});return <><h1>Notifications</h1>{(q.data||[]).map((n:any)=><div className="card row" key={n.id}>{n.message}</div>)}</>}
-function App(){const protectedPage=(role:Role,el:any)=><Require role={role}><Dash role={role}>{el}</Dash></Require>;return <Routes><Route path="/" element={<Home/>}/><Route path="/jobs" element={<Jobs/>}/><Route path="/jobs/:id" element={<JobDetails/>}/><Route path="/login" element={<Auth/>}/><Route path="/register" element={<Auth register/>}/><Route path="/forgot-password" element={<Auth/>}/><Route path="/candidate" element={protectedPage('Candidate',<Dashboard role="Candidate"/>)}/><Route path="/candidate/profile" element={protectedPage('Candidate',<Profile/>)}/><Route path="/candidate/applications" element={protectedPage('Candidate',<Applications/>)}/><Route path="/candidate/resumes" element={protectedPage('Candidate',<Resumes/>)}/><Route path="/candidate/saved" element={protectedPage('Candidate',<Jobs/>)}/><Route path="/candidate/notifications" element={protectedPage('Candidate',<Notifications/>)}/><Route path="/employer" element={protectedPage('Employer',<Dashboard role="Employer"/>)}/><Route path="/employer/profile" element={protectedPage('Employer',<Profile/>)}/><Route path="/employer/post" element={protectedPage('Employer',<Post/>)}/><Route path="/employer/applicants" element={protectedPage('Employer',<EmployerApps/>)}/><Route path="/employer/jobs" element={protectedPage('Employer',<Dashboard role="Employer"/>)}/><Route path="/employer/notifications" element={protectedPage('Employer',<Notifications/>)}/><Route path="*" element={<Navigate to="/"/>}/></Routes>}; export default App;
+import type { ReactNode } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { RoleGate, DashboardLayout } from "./layouts/SiteLayout";
+import {
+  AuthPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+} from "./pages/auth/AuthPages";
+import {
+  ApplicationsPage,
+  ResumeManagerPage,
+  SavedJobsPage,
+} from "./pages/candidate/CandidatePages";
+import {
+  DashboardOverview,
+  NotificationsPage,
+  ProfilePage,
+  PasswordPage,
+} from "./pages/dashboard/DashboardPages";
+import {
+  EmployerApplicationsPage,
+  EmployerJobsPage,
+  JobFormPage,
+} from "./pages/employer/EmployerPages";
+import { Home, JobDetails, Jobs } from "./pages/public/JobPages";
+import type { Role } from "./types";
+
+function protectedPage(role: Role, page: ReactNode) {
+  return (
+    <RoleGate role={role}>
+      <DashboardLayout role={role}>{page}</DashboardLayout>
+    </RoleGate>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/jobs" element={<Jobs />} />
+      <Route path="/jobs/:id" element={<JobDetails />} />
+      <Route path="/login" element={<AuthPage />} />
+      <Route path="/register" element={<AuthPage register />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/reset-password/" element={<ResetPasswordPage />} />
+      <Route
+        path="/candidate"
+        element={protectedPage(
+          "Candidate",
+          <DashboardOverview role="Candidate" />,
+        )}
+      />
+      <Route
+        path="/candidate/profile"
+        element={protectedPage("Candidate", <ProfilePage />)}
+      />
+      <Route
+        path="/candidate/saved"
+        element={protectedPage("Candidate", <SavedJobsPage />)}
+      />
+      <Route
+        path="/candidate/applications"
+        element={protectedPage("Candidate", <ApplicationsPage />)}
+      />
+      <Route
+        path="/candidate/resumes"
+        element={protectedPage("Candidate", <ResumeManagerPage />)}
+      />
+      <Route
+        path="/candidate/notifications"
+        element={protectedPage("Candidate", <NotificationsPage />)}
+      />
+      <Route
+        path="/candidate/password"
+        element={protectedPage("Candidate", <PasswordPage />)}
+      />
+      <Route
+        path="/employer"
+        element={protectedPage(
+          "Employer",
+          <DashboardOverview role="Employer" />,
+        )}
+      />
+      <Route
+        path="/employer/profile"
+        element={protectedPage("Employer", <ProfilePage />)}
+      />
+      <Route
+        path="/employer/post"
+        element={protectedPage("Employer", <JobFormPage />)}
+      />
+      <Route
+        path="/employer/jobs"
+        element={protectedPage("Employer", <EmployerJobsPage />)}
+      />
+      <Route
+        path="/employer/jobs/:id/edit"
+        element={protectedPage("Employer", <JobFormPage />)}
+      />
+      <Route
+        path="/employer/applicants"
+        element={protectedPage("Employer", <EmployerApplicationsPage />)}
+      />
+      <Route
+        path="/employer/notifications"
+        element={protectedPage("Employer", <NotificationsPage />)}
+      />
+      <Route
+        path="/employer/password"
+        element={protectedPage("Employer", <PasswordPage />)}
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
