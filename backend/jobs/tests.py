@@ -95,6 +95,18 @@ class JobBoardWorkflowTests(TestCase):
         )
         self.assertEqual(job_response.status_code, 201)
 
+        search_response = public_client.get(
+            "/api/jobs/?search=Workflow&location=Remote&job_type=Full-time&min_salary=70000"
+        )
+        self.assertEqual(search_response.status_code, 200)
+        self.assertEqual(search_response.data["count"], 1)
+        self.assertEqual(search_response.data["results"][0]["id"], job_response.data["id"])
+
+        invalid_filter_response = public_client.get(
+            "/api/jobs/?min_salary=not-a-number"
+        )
+        self.assertEqual(invalid_filter_response.status_code, 400)
+
         with tempfile.TemporaryDirectory() as media_root:
             with override_settings(MEDIA_ROOT=media_root):
                 resume_response = candidate_client.post(
