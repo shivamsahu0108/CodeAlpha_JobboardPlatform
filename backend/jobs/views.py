@@ -66,13 +66,43 @@ def login_user(request):
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
+@api_view(["GET"])
+@permission_classes([AllowAny])
 def job_list(request):
-    jobs = JobListing.objects.filter(status="Open")
+    jobs = JobListing.objects.filter(status="Open").select_related("employer")
 
-    data = []
+    search = request.query_params.get("search", "").strip()
+    location = request.query_params.get("location", "").strip()
+    job_type = request.query_params.get("job_type", "").strip()
+    min_salary = request.query_params.get("min_salary")
+    max_salary = request.query_params.get("max_salary")
 
-    for job in jobs:
-        data.append({
+    if search:
+        jobs = jobs.filter(
+            Q(title__icontains=search)
+            | Q(description__icontains=search)
+            | Q(employer__company_name__icontains=search)
+        )
+    if location:
+        jobs = jobs.filter(location__icontains=location)
+    if job_type:
+        jobs = jobs.filter(job_type__iexact=job_type)
+
+    try:
+        if min_salary not in (None, ""):
+            jobs = jobs.filter(salary__gte=int(min_salary))
+        if max_salary not in (None, ""):
+            jobs = jobs.filter(salary__lte=int(max_salary))
+    except (TypeError, ValueError):
+        return Response(
+            {"detail": "Salary filters must be valid integers."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    paginator = PageNumberPagination()
+    page = paginator.paginate_queryset(jobs.order_by("-created_at"), request)
+    data = [
+        {
             "id": job.id,
             "title": job.title,
             "company": job.employer.company_name,
@@ -81,9 +111,10 @@ def job_list(request):
             "salary": job.salary,
             "job_type": job.job_type,
             "status": job.status,
-        })
-
-    return JsonResponse(data, safe=False)
+        }
+        for job in page
+    ]
+    return paginator.get_paginated_response(data)
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def change_password(request):
