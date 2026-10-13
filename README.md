@@ -106,3 +106,9 @@ The backend test suite covers password reset email and a candidate/employer appl
 ## Privacy note
 
 Do not commit `.env` files, databases, dependency folders, Python caches, or uploaded resumes. If sensitive data was previously committed, remove it from Git history before sharing the repository publicly.
+
+## Deployment
+
+A Render Blueprint (`render.yaml`) is included for the Django API and PostgreSQL database. The frontend includes `frontend/netlify.toml` for Netlify builds and React Router fallback.
+
+Follow [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for step-by-step deployment, environment variables, CORS setup, and live smoke testing. A successful local build does not itself mean a live deployment is complete; add your actual live URLs here after verifying them.
