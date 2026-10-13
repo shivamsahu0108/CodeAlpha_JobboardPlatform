@@ -409,8 +409,6 @@ def delete_resume(request, resume_id):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@api_view(["GET"])
-@permission_classes([AllowAny])
 def job_detail(request, job_id):
     try:
         job = JobListing.objects.select_related(
