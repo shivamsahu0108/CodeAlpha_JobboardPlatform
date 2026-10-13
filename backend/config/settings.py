@@ -14,6 +14,7 @@ import os
 
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -57,6 +58,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -96,32 +98,42 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = "config.wsgi.application"
 
-DATABASE_ENGINE = os.environ.get(
-    "DJANGO_DB_ENGINE", "django.db.backends.sqlite3"
-)
-if DATABASE_ENGINE == "django.db.backends.postgresql":
+DATABASE_URL = os.environ.get("DATABASE_URL")
+if DATABASE_URL:
     DATABASES = {
-        "default": {
-            "ENGINE": DATABASE_ENGINE,
-            "NAME": os.environ.get("DB_NAME", "jobboard"),
-            "USER": os.environ.get("DB_USER", "postgres"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-            "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
-            "PORT": os.environ.get("DB_PORT", "5432"),
-        }
-    }
-elif DATABASE_ENGINE == "django.db.backends.sqlite3":
-    DATABASES = {
-        "default": {
-            "ENGINE": DATABASE_ENGINE,
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=not DEBUG,
+        )
     }
 else:
-    raise ImproperlyConfigured(
-        "DJANGO_DB_ENGINE must be django.db.backends.sqlite3 or "
-        "django.db.backends.postgresql."
+    DATABASE_ENGINE = os.environ.get(
+        "DJANGO_DB_ENGINE", "django.db.backends.sqlite3"
     )
+    if DATABASE_ENGINE == "django.db.backends.postgresql":
+        DATABASES = {
+            "default": {
+                "ENGINE": DATABASE_ENGINE,
+                "NAME": os.environ.get("DB_NAME", "jobboard"),
+                "USER": os.environ.get("DB_USER", "postgres"),
+                "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+                "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+                "PORT": os.environ.get("DB_PORT", "5432"),
+            }
+        }
+    elif DATABASE_ENGINE == "django.db.backends.sqlite3":
+        DATABASES = {
+            "default": {
+                "ENGINE": DATABASE_ENGINE,
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
+    else:
+        raise ImproperlyConfigured(
+            "DJANGO_DB_ENGINE must be django.db.backends.sqlite3 or "
+            "django.db.backends.postgresql."
+        )
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -143,7 +155,14 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    },
+}
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
