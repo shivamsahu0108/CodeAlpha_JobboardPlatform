@@ -409,61 +409,6 @@ def delete_resume(request, resume_id):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-def job_list(request):
-    jobs = JobListing.objects.filter(status="Open")
-
-    # Search by job title or description
-    search = request.query_params.get("search")
-    if search:
-        jobs = jobs.filter(
-            Q(title__icontains=search)
-            | Q(description__icontains=search)
-        )
-
-    # Filter by location
-    location = request.query_params.get("location")
-    if location:
-        jobs = jobs.filter(location__icontains=location)
-
-    # Filter by job type
-    job_type = request.query_params.get("job_type")
-    if job_type:
-        jobs = jobs.filter(job_type=job_type)
-
-    # Filter by minimum salary
-    min_salary = request.query_params.get("min_salary")
-    if min_salary:
-        jobs = jobs.filter(salary__gte=min_salary)
-
-    # Filter by maximum salary
-    max_salary = request.query_params.get("max_salary")
-    if max_salary:
-        jobs = jobs.filter(salary__lte=max_salary)
-
-    jobs = jobs.select_related("employer").order_by("-created_at")
-
-    paginator = PageNumberPagination()
-    paginator.page_size = 10
-
-    page = paginator.paginate_queryset(jobs, request)
-
-    data = [
-        {
-            "id": job.id,
-            "title": job.title,
-            "description": job.description,
-            "company": job.employer.company_name,
-            "location": job.location,
-            "salary": job.salary,
-            "job_type": job.job_type,
-            "status": job.status,
-            "created_at": job.created_at,
-        }
-        for job in page
-    ]
-
-    return paginator.get_paginated_response(data)
-
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def job_detail(request, job_id):
