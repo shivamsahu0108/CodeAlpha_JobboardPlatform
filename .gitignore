@@ -1,0 +1,22 @@
+# Python environments and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Local environment configuration
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Frontend dependencies and build output
+node_modules/
+frontend/dist/
+*.tsbuildinfo
+/frontend/vite.config.js
+/frontend/vite.config.d.ts
+
+# User-uploaded files
+backend/media/

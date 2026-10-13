@@ -16,9 +16,29 @@ Run database migrations and start Django:
 
 ```powershell
 Set-Location .\backend
+$env:DJANGO_DEBUG = "True"
 ..\.venv\Scripts\python.exe manage.py migrate
 ..\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
 ```
+
+Local development uses SQLite and generates a temporary random Django secret when `DJANGO_DEBUG=True` and `DJANGO_SECRET_KEY` is unset. Set `DJANGO_DEBUG=True` in each backend terminal used for local development. Debug mode must remain disabled in production.
+
+## Deployment Configuration
+
+Production requires `DJANGO_SECRET_KEY`; Django will refuse to start without it when debug mode is disabled. Generate a new secret with Django's `get_random_secret_key()` and configure it in the deployment environment, not in source control. Set `DJANGO_ALLOWED_HOSTS` to a comma-separated list of deployment hostnames and `DJANGO_CORS_ALLOWED_ORIGINS` to the exact comma-separated frontend origins. `FRONTEND_URL` controls links in password reset email.
+
+SQLite remains the default for local development. To use PostgreSQL, install the backend requirements and set these variables before starting Django:
+
+```powershell
+$env:DJANGO_DB_ENGINE = "django.db.backends.postgresql"
+$env:DB_NAME = "jobboard"
+$env:DB_USER = "postgres"
+$env:DB_PASSWORD = "your-database-password"
+$env:DB_HOST = "127.0.0.1"
+$env:DB_PORT = "5432"
+```
+
+Store database credentials and the Django secret in the deployment platform's secret manager. Do not commit them or put them in frontend variables.
 
 In a second terminal, start the frontend:
 
