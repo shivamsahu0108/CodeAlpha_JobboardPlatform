@@ -1,11 +1,11 @@
-# Python environments and generated files
+# Python virtual environments and generated files
 .venv/
 venv/
 __pycache__/
 *.py[cod]
 *.sqlite3
 
-# Local environment configuration
+# Local environment files; example templates may be committed
 .env
 .env.*
 !.env.example
@@ -18,5 +18,5 @@ frontend/dist/
 /frontend/vite.config.js
 /frontend/vite.config.d.ts
 
-# User-uploaded files
+# Local user uploads must never be committed
 backend/media/
